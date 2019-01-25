@@ -163,20 +163,19 @@ bool many_to_many_both(func p_funcRead, func p_funcWrite){
 		if (pthread_create(&write_threads[i], NULL, p_funcWrite, NULL) != 0)
     		syslog(LOG_INFO, "E:Creating thread");
   	}
+  	
+    for(int i = 0; i < THREAD_NUM; i++){
+        pthread_join(write_threads[i], NULL);	
+    }
 
   	for(int i = 0; i < THREAD_NUM; i++){
 		if (pthread_create(&read_threads[i], NULL, p_funcRead, &count[i]) != 0)
     		syslog(LOG_INFO, "E:Creating thread");
   	}
-
-	for(int i = 0; i < THREAD_NUM; i++){
-    	pthread_join(write_threads[i], NULL);	
-    }
-
-    for(int i = 0; i < THREAD_NUM; i++){
+  	
+  	for(int i = 0; i < THREAD_NUM; i++){
     	pthread_join(read_threads[i], NULL);	
     }
-
 
     int rest_count = 0;
     if (pthread_create(&clean_thread, NULL, p_funcRead, &rest_count) != 0)
