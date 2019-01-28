@@ -21,6 +21,15 @@ void* writeOS(void* args){
  	pthread_exit(0);
 }
 
+void* writeOSInverse(void* args){
+	for (int i = 0; i < ELEMS_NUM; i++){
+		int num = ELEMS_NUM - i;
+		p_SetOS->add(num);
+	}
+ 	pthread_exit(0);
+}
+
+
 void* readOS(void* args){
 	int* count = reinterpret_cast<int*>(args);
 	*count = 0;
@@ -36,6 +45,14 @@ void* readOS(void* args){
 void* writeLS(void* args){
 	for (int i = 0; i < ELEMS_NUM; i++){
 		int num = i + 1;
+		p_SetLS->add(num);
+	}
+ 	pthread_exit(0);
+}
+
+void* writeLSInverse(void* args){
+	for (int i = 0; i < ELEMS_NUM; i++){
+		int num = ELEMS_NUM - i;
 		p_SetLS->add(num);
 	}
  	pthread_exit(0);
@@ -194,6 +211,49 @@ bool many_to_many_both(func p_funcRead, func p_funcWrite){
  
 }
 
+bool many_to_many_different_numbers(func p_funcRead,func p_funcWrite, func p_funcWriteInverse){
+	p_SetOS = new SetOS<int>();
+	p_SetLS = new SetLS<int>();
+
+	pthread_t read_threads[THREAD_NUM];
+	pthread_t write_threads[THREAD_NUM];
+	pthread_t clean_thread;
+	int count[THREAD_NUM];
+
+	for(int i = 0; i < THREAD_NUM; i++){
+		if (pthread_create(&write_threads[i], NULL, i % 2 == 0? p_funcWrite: p_funcWriteInverse, NULL) != 0)
+    		syslog(LOG_INFO, "E:Creating thread");
+  	}
+  	
+    for(int i = 0; i < THREAD_NUM; i++){
+        pthread_join(write_threads[i], NULL);	
+    }
+
+  	for(int i = 0; i < THREAD_NUM; i++){
+		if (pthread_create(&read_threads[i], NULL, p_funcRead, &count[i]) != 0)
+    		syslog(LOG_INFO, "E:Creating thread");
+  	}
+  	
+  	for(int i = 0; i < THREAD_NUM; i++){
+    	pthread_join(read_threads[i], NULL);	
+    }
+
+    int rest_count = 0;
+    if (pthread_create(&clean_thread, NULL, p_funcRead, &rest_count) != 0)
+    	syslog(LOG_INFO, "E:Creating thread");
+    pthread_join(clean_thread, NULL);
+
+	int sum = 0;
+    for(int i = 0; i < THREAD_NUM; i++){
+    	sum += count[i];
+    }
+
+    delete p_SetOS;
+    delete p_SetLS;
+
+    return (sum == ELEMS_NUM);
+ 
+}
 
 void print_result(bool res){
 	res ? std::cout << "OK" : std::cout << "WRONG";
@@ -228,11 +288,14 @@ int main()
     std::cout << "LS: many_to_many_both: ";
     print_result(many_to_many_both(&readLS, &writeLS));
         
-    
-    
     std::cout << "OS: many_to_many_both: ";
     print_result(many_to_many_both(&readOS, &writeOS));
     
+    std::cout << "LS: many_to_many_both write different numbers: ";
+    print_result(many_to_many_different_numbers(&readLS, &writeLS, &writeLSInverse));
+    
+    std::cout << "OS: many_to_many_both write different numbers: ";
+    print_result(many_to_many_different_numbers(&readOS, &writeOS, &writeOSInverse));
 
     
     return 0;
