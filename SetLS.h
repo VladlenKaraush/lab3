@@ -69,6 +69,7 @@ public:
       Node* prev = head;
       Node* cur = head->next;
       while (cur->key < key){
+        
         prev = cur;
         cur = cur->next;
       }
@@ -93,6 +94,7 @@ public:
           return true;
         }
       }
+      
       prev->unlock();
       cur->unlock();
     }

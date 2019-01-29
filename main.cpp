@@ -5,8 +5,8 @@
 #include "SetOS.h"
 #include "SetLS.h"
 
-#define ELEMS_NUM 200
-#define THREAD_NUM 5
+#define ELEMS_NUM 100
+#define THREAD_NUM 2
 
 typedef void* (*func)(void* args);
 
@@ -211,7 +211,7 @@ bool many_to_many_both(func p_funcRead, func p_funcWrite){
  
 }
 
-bool many_to_many_different_numbers(func p_funcRead,func p_funcWrite, func p_funcWriteInverse){
+int many_to_many_different_numbers(func p_funcRead,func p_funcWrite, func p_funcWriteInverse){
 	p_SetOS = new SetOS<int>();
 	p_SetLS = new SetLS<int>();
 
@@ -225,18 +225,19 @@ bool many_to_many_different_numbers(func p_funcRead,func p_funcWrite, func p_fun
     		syslog(LOG_INFO, "E:Creating thread");
   	}
   	
-    for(int i = 0; i < THREAD_NUM; i++){
-        pthread_join(write_threads[i], NULL);	
-    }
-
   	for(int i = 0; i < THREAD_NUM; i++){
 		if (pthread_create(&read_threads[i], NULL, p_funcRead, &count[i]) != 0)
     		syslog(LOG_INFO, "E:Creating thread");
   	}
   	
+    for(int i = 0; i < THREAD_NUM; i++){
+        pthread_join(write_threads[i], NULL);	
+    }
+  	
   	for(int i = 0; i < THREAD_NUM; i++){
     	pthread_join(read_threads[i], NULL);	
     }
+    
 
     int rest_count = 0;
     if (pthread_create(&clean_thread, NULL, p_funcRead, &rest_count) != 0)
@@ -250,8 +251,8 @@ bool many_to_many_different_numbers(func p_funcRead,func p_funcWrite, func p_fun
 
     delete p_SetOS;
     delete p_SetLS;
-
-    return (sum == ELEMS_NUM);
+    
+    return sum;
  
 }
 
@@ -291,12 +292,24 @@ int main()
     std::cout << "OS: many_to_many_both: ";
     print_result(many_to_many_both(&readOS, &writeOS));
     
-    std::cout << "LS: many_to_many_both write different numbers: ";
-    print_result(many_to_many_different_numbers(&readLS, &writeLS, &writeLSInverse));
     
     std::cout << "OS: many_to_many_both write different numbers: ";
-    print_result(many_to_many_different_numbers(&readOS, &writeOS, &writeOSInverse));
+    int sum = many_to_many_different_numbers(&readOS, &writeOS, &writeOSInverse);
+    if(sum = ELEMS_NUM){
+        printf("OK\n");
+    }
+    else{
+        printf("WRONG\n");
+    }
 
+    std::cout << "LS: many_to_many_both write different numbers: ";
+    sum = many_to_many_different_numbers(&readLS, &writeLS, &writeLSInverse);
+    if(sum = ELEMS_NUM){
+        printf("OK\n");
+    }
+    else{
+        printf("WRONG\n");
+    }
     
     return 0;
 }

@@ -1,6 +1,6 @@
 COMPILER=g++ -std=c++0x
 EXT=cpp
-CFLAGS=-Wall -Werror
+CFLAGS=-Werror
 EXECUTABLE=lab3
 
 SOURCES=$(shell find . -name "*.$(EXT)")
